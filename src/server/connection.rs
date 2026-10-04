@@ -6584,45 +6584,47 @@ fn start_wakelock_thread() -> std::sync::mpsc::Sender<(usize, usize)> {
     std::thread::spawn(move || {
         let mut wakelock: Option<WakeLock> = None;
         let mut last_display = false;
+        let mut last_counts: (usize, usize) = (0, 0);
         loop {
-            match rx.recv() {
-                Ok((conn_count, remote_count)) => {
-                    let keep_awake = config::Config::get_bool_option(
-                        keys::OPTION_KEEP_AWAKE_DURING_INCOMING_SESSIONS,
-                    );
-                    *WAKELOCK_KEEP_AWAKE_OPTION.lock().unwrap() = Some(keep_awake);
-                    if conn_count == 0 || !keep_awake {
-                        if wakelock.is_some() {
-                            wakelock = None;
-                            log::info!("drop wakelock");
-                        }
-                    } else {
-                        let mut display = remote_count > 0;
-                        if let Some(_w) = wakelock.as_mut() {
-                            if display != last_display {
-                                #[cfg(any(target_os = "windows", target_os = "macos"))]
-                                {
-                                    log::info!("set wakelock display to {display}");
-                                    if let Err(e) = _w.set_display(display) {
-                                        log::error!(
-                                            "failed to set wakelock display to {display}: {e:?}"
-                                        );
-                                    }
-                                }
-                            }
-                        } else {
-                            if cfg!(target_os = "linux") {
-                                display = true;
-                            }
-                            wakelock = Some(get_wakelock(display));
-                        }
-                        last_display = display;
-                    }
-                }
+            match rx.recv_timeout(std::time::Duration::from_secs(15)) {
+                Ok(counts) => last_counts = counts,
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
                 Err(e) => {
                     log::error!("wakelock receive error: {e:?}");
                     break;
                 }
+            }
+            let (conn_count, remote_count) = last_counts;
+            let keep_awake = config::Config::get_bool_option(keys::OPTION_KEEP_AWAKE_DURING_INCOMING_SESSIONS);
+            let keep_always = config::Config::get_bool_option(keys::OPTION_KEEP_AWAKE_ALWAYS);
+            *WAKELOCK_KEEP_AWAKE_OPTION.lock().unwrap() = Some(keep_awake);
+            let want = keep_always || (conn_count > 0 && keep_awake);
+            if !want {
+                if wakelock.is_some() {
+                    wakelock = None;
+                    log::info!("drop wakelock");
+                }
+            } else {
+                let mut display = remote_count > 0;
+                if let Some(_w) = wakelock.as_mut() {
+                    if display != last_display {
+                        #[cfg(any(target_os = "windows", target_os = "macos"))]
+                        {
+                            log::info!("set wakelock display to {display}");
+                            if let Err(e) = _w.set_display(display) {
+                                log::error!(
+                                    "failed to set wakelock display to {display}: {e:?}"
+                                );
+                            }
+                        }
+                    }
+                } else {
+                    if cfg!(target_os = "linux") {
+                        display = true;
+                    }
+                    wakelock = Some(get_wakelock(display));
+                }
+                last_display = display;
             }
         }
     });

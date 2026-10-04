@@ -176,6 +176,9 @@ pub const OPTION_KEEP_SCREEN_ON: &str = "keep-screen-on";
 // Server-side: keep host system awake during incoming sessions (Security setting)
 pub const OPTION_KEEP_AWAKE_DURING_INCOMING_SESSIONS: &str = "keep-awake-during-incoming-sessions";
 
+// Server-side: keep host system awake always (Security setting)
+pub const OPTION_KEEP_AWAKE_ALWAYS: &str = "keep-awake-always";
+
 // Client-side: keep client system awake during outgoing sessions (General setting)
 pub const OPTION_KEEP_AWAKE_DURING_OUTGOING_SESSIONS: &str = "keep-awake-during-outgoing-sessions";
 
@@ -244,6 +247,7 @@ pub const KEYS_LOCAL_SETTINGS: &[&str] = &[
     OPTION_KEEP_SCREEN_ON,
     // Client-side: keep client system awake during outgoing sessions (General setting)
     OPTION_KEEP_AWAKE_DURING_OUTGOING_SESSIONS,
+    OPTION_KEEP_AWAKE_ALWAYS,
     OPTION_DISABLE_GROUP_PANEL,
     OPTION_DISABLE_DISCOVERY_PANEL,
     OPTION_PRE_ELEVATE_SERVICE,
@@ -327,6 +331,7 @@ pub const KEYS_SETTINGS: &[&str] = &[
     OPTION_DISABLE_UDP,
     OPTION_ALLOW_INSECURE_TLS_FALLBACK,
     OPTION_KEEP_AWAKE_DURING_INCOMING_SESSIONS,
+    OPTION_KEEP_AWAKE_ALWAYS,
     OPTION_ALLOW_AUTO_UPDATE,
     OPTION_ALLOW_KCP_CC,
     OPTION_ALLOW_WEBRTC_CC,
