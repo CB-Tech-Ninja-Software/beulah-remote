@@ -2361,6 +2361,10 @@ pub fn main_is_installed_lower_version() -> SyncReturn<bool> {
     SyncReturn(is_installed_lower_version())
 }
 
+pub fn main_uninstall_daemon() { 
+    crate::platform::uninstall_service(false, false); 
+} 
+
 pub fn main_is_installed_daemon(prompt: bool) -> SyncReturn<bool> {
     SyncReturn(is_installed_daemon(prompt))
 }
