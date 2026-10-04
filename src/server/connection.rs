@@ -6577,6 +6577,12 @@ impl FileRemoveLogControl {
     }
 }
 
+/// Start the wakelock thread at server start. The sender is a lazy_static, so without this the thread
+/// (and the "keep awake always" option) would only start after the first incoming connection.
+pub fn init_wakelock() {
+    drop(WAKELOCK_SENDER.lock().unwrap());
+}
+
 fn start_wakelock_thread() -> std::sync::mpsc::Sender<(usize, usize)> {
     // Check if we should keep awake during incoming sessions
     use crate::platform::{get_wakelock, WakeLock};
