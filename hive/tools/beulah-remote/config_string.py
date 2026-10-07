@@ -18,15 +18,15 @@ def encode_config(host, key, api=None, relay=None):
     
     # Serialize to JSON
     json_data = json.dumps(config, separators=(',', ':'))
-    
-    # Reverse the string
-    reversed_data = json_data[::-1]
-    
-    # Encode with URL-safe Base64 (without padding)
-    encoded = base64.urlsafe_b64encode(reversed_data.encode('utf-8')).decode('utf-8')
-    
-    # Remove padding
-    encoded = encoded.rstrip('=')
+
+    # Rust's get_custom_server_from_config_string does:
+    #   tmp = s.chars().rev().collect();  base64_decode(tmp)
+    # i.e. the wire string is the REVERSE of the base64 encoding of the JSON --
+    # base64 first, then reverse that result. (Not reverse-then-encode, which
+    # produces a string Rust's decoder cannot parse.)
+    b64 = base64.urlsafe_b64encode(json_data.encode('utf-8')).decode('utf-8')
+    b64 = b64.rstrip('=')
+    encoded = b64[::-1]
     
     # Create the filename-safe string
     filename_safe = f"host={host},key={key}"
@@ -42,22 +42,19 @@ key = "{key}" """
     return encoded, filename_safe, config_block
 
 def decode_config(encoded_string):
-    """Decode a Base64-URL-safe string back to JSON"""
+    """Decode a Base64-URL-safe string back to JSON (matches Rust's
+    get_custom_server_from_config_string: reverse first, then base64-decode)."""
+    # Reverse the string first (undoes config_string.py's final reverse step)
+    b64 = encoded_string[::-1]
+
     # Add padding if needed
-    padding = 4 - (len(encoded_string) % 4)
+    padding = 4 - (len(b64) % 4)
     if padding != 4:
-        encoded_string += '=' * padding
-    
+        b64 += '=' * padding
+
     try:
-        # Decode Base64
-        decoded_bytes = base64.urlsafe_b64decode(encoded_string)
-        decoded_string = decoded_bytes.decode('utf-8')
-        
-        # Reverse the string
-        reversed_string = decoded_string[::-1]
-        
-        # Parse JSON
-        json_data = json.loads(reversed_string)
+        decoded_bytes = base64.urlsafe_b64decode(b64)
+        json_data = json.loads(decoded_bytes.decode('utf-8'))
         return json_data
     except Exception as e:
         raise ValueError(f"Failed to decode: {str(e)}")
