@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=RustDesk
+Name=Beulah Remote
 GenericName=Remote Desktop
-Comment=Remote Desktop
+Comment=Beulah Remote Desktop Client
 Exec=rustdesk %u
 Icon=rustdesk
 Terminal=false
