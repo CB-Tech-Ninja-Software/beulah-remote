@@ -13,6 +13,41 @@ before any `cargo` command in this repo. This has been independently confirmed t
 2026-10-08) — if `cargo check` fails on libyuv, check this env var before assuming the dependency is
 actually missing.
 
+### Building the real macOS `.app` (not just `cargo build`'s CLI binary)
+
+`cargo build --release` alone only builds the Rust lib with **default features** — `flutter`
+(which gates `src/flutter.rs`, where `rustdesk_core_main` lives) is NOT in the default feature
+set. Without it, `liblibrustdesk.dylib` won't export the symbol the Swift side needs, and the
+Xcode link step fails with "symbol(s) not found ... _rustdesk_core_main" with NO indication the
+feature flag is the cause. Always build with:
+```
+VCPKG_ROOT=$HOME/vcpkg MACOSX_DEPLOYMENT_TARGET=12.0 cargo build --locked --features flutter,hwcodec --release
+```
+
+Two more one-time-per-worktree setup steps, both for files that are gitignored/generated and so
+don't survive a fresh `git worktree add`:
+1. `flutter/lib/generated_bridge.dart` and `flutter/macos/Runner/bridge_generated.h` (the Dart and
+   C sides of the Rust↔Dart/Swift FFI bridge) must be regenerated per worktree:
+   ```
+   ~/.cargo/bin/flutter_rust_bridge_codegen --rust-input ./src/flutter_ffi.rs \
+     --dart-output ./flutter/lib/generated_bridge.dart \
+     --c-output ./flutter/macos/Runner/bridge_generated.h
+   cp ./flutter/macos/Runner/bridge_generated.h ./flutter/ios/Runner/bridge_generated.h
+   ```
+   (binary already installed at `~/.cargo/bin/flutter_rust_bridge_codegen`; the exact command is
+   also in `.github/workflows/bridge.yml`).
+2. This machine's global Flutter (3.47.5+) is far newer than what this fork's own CI pins
+   (`FLUTTER_VERSION: "3.24.5"` in `.github/workflows/flutter-build.yml`) — building with the
+   global SDK produces real Dart compile errors (`DialogTheme`→`DialogThemeData` etc., not a red
+   herring). Use `fvm` (already set up, `flutter/.fvmrc` pins 3.24.5) and run
+   `fvm flutter build macos --release`, not bare `flutter build macos`.
+
+If you still hit a CocoaPods link error (Flutter plugin symbols like `UrlLauncherPlugin.register`
+undefined) after all of the above, it's very likely stale `Pods/`+`DerivedData` from before one of
+these fixes was in place — `flutter clean`, `rm -rf macos/Pods macos/Podfile.lock`, wipe
+`~/Library/Developer/Xcode/DerivedData/Runner-*`, then rebuild. Confirmed 2026-10-08: this fixed a
+build that failed identically across 3 consecutive attempts otherwise.
+
 ## Project Layout
 
 ### Directory Structure
