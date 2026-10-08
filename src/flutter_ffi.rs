@@ -2362,6 +2362,7 @@ pub fn main_is_installed_lower_version() -> SyncReturn<bool> {
 }
 
 pub fn main_uninstall_daemon() { 
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     crate::platform::uninstall_service(false, false); 
 } 
 

@@ -82,7 +82,7 @@ protobuf {
 }
 
 android {
-    namespace "com.carriez.flutter_hbb"
+    namespace "com.cbtech.beulahremote"
     compileSdkVersion 36
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
@@ -99,7 +99,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.carriez.flutter_hbb"
+        applicationId "com.cbtech.beulahremote"
         minSdkVersion 22
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
@@ -117,9 +117,7 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.release
+            signingConfig(keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug)
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules'
         }
     }

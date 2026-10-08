@@ -48,6 +48,34 @@ these fixes was in place — `flutter clean`, `rm -rf macos/Pods macos/Podfile.l
 `~/Library/Developer/Xcode/DerivedData/Runner-*`, then rebuild. Confirmed 2026-10-08: this fixed a
 build that failed identically across 3 consecutive attempts otherwise.
 
+## Local Android build env (this machine)
+
+Android SDK is installed at `~/Library/Android/sdk` with NDK `25.2.9519653` and cmdline-tools.
+
+### Prerequisites & Gotchas
+1. **JDK 17 required**: Gradle 8.11 does not support JDK 25 (`Unsupported class file major version 69`). Use Homebrew OpenJDK 17:
+   ```bash
+   export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+   export PATH="$JAVA_HOME/bin:$PATH"
+   ```
+2. **Gradle heap memory**: `org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g` in `flutter/android/gradle.properties` prevents Java heap space OOM during Jetifier transforms.
+3. **vcpkg arm64-android dependencies**: Built via `./flutter/build_android_deps.sh arm64-v8a` with `VCPKG_ROOT=$HOME/vcpkg` and `ANDROID_NDK_HOME=$HOME/Library/Android/sdk/ndk/25.2.9519653`.
+4. **AR / RANLIB for libsodium-sys**: When cross-compiling on macOS, `libsodium-sys` autotools defaults to `/usr/bin/ar` and `/usr/bin/ranlib`, which silently reject ARM ELF object files and produce an empty 96-byte `libsodium.a` (causing runtime `dlopen` crash on `sodium_base64_encoded_len`). Always export NDK's `llvm-ar` and `llvm-ranlib`:
+   ```bash
+   export AR=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-ar
+   export RANLIB=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-ranlib
+   export AR_aarch64_linux_android=$AR
+   export RANLIB_aarch64_linux_android=$RANLIB
+   ```
+5. **Rust library build**: Run `./flutter/ndk_arm64.sh` (builds `target/aarch64-linux-android/release/liblibrustdesk.so`), then copy both `liblibrustdesk.so` and `libc++_shared.so` into `flutter/android/app/src/main/jniLibs/arm64-v8a/`:
+   ```bash
+   mkdir -p flutter/android/app/src/main/jniLibs/arm64-v8a
+   cp target/aarch64-linux-android/release/liblibrustdesk.so flutter/android/app/src/main/jniLibs/arm64-v8a/librustdesk.so
+   cp $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so flutter/android/app/src/main/jniLibs/arm64-v8a/
+   ```
+6. **Flutter build**: Run `fvm flutter build apk --release --target-platform android-arm64` in `flutter/`.
+7. **Headless emulator testing**: Test via `~/Library/Android/sdk/emulator/emulator -avd test_avd -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect` to prevent popping native GUI windows on the host desktop.
+
 ## Project Layout
 
 ### Directory Structure

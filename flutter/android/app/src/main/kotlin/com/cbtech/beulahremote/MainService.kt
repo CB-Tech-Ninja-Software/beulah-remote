@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package com.cbtech.beulahremote
 
 import ffi.FFI
 
