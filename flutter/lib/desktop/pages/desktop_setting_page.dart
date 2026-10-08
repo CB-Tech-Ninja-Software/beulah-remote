@@ -465,6 +465,23 @@ class _GeneralState extends State<_General> {
       }
 
       return _Card(title: 'Service', children: [
+        if (Platform.isMacOS)
+          _OptionCheckBox(
+            context,
+            'Start when this computer starts',
+            'start-on-boot',
+            isServer: false,
+            optGetter: () => bind.mainIsInstalledDaemon(prompt: false),
+            optSetter: (k, v) async {
+              if (v) {
+                bind.mainIsInstalledDaemon(prompt: true);
+              } else {
+                bind.mainUninstallDaemon();
+              }
+            },
+            update: (_) => serviceStop.refresh(),
+          ),
+
         _Button(serviceStop.value ? 'Start' : 'Stop', () {
           () async {
             serviceBtnEnabled.value = false;
