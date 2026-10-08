@@ -1,5 +1,18 @@
 # RustDesk Guide
 
+## Local macOS build env (this machine)
+
+`vcpkg` is already cloned and built at `~/vcpkg` with `libyuv`/`libvpx`/`opus`/`aom` for `arm64-osx`
+already installed. `cargo check`/`cargo build` only find it if `VCPKG_ROOT=$HOME/vcpkg` is exported
+first — without it you'll see a misleading "missing libyuv" error that looks like a real dependency
+gap but isn't. Always run:
+```
+export VCPKG_ROOT=$HOME/vcpkg
+```
+before any `cargo` command in this repo. This has been independently confirmed twice (2026-10-07,
+2026-10-08) — if `cargo check` fails on libyuv, check this env var before assuming the dependency is
+actually missing.
+
 ## Project Layout
 
 ### Directory Structure
