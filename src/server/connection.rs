@@ -1548,6 +1548,7 @@ impl Connection {
     }
 
     fn post_conn_audit(&self, v: Value) {
+        super::connection_audit::record(self.inner.id, &self.ip, &v);
         if self.server_audit_conn.is_empty() {
             return;
         }
